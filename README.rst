@@ -69,8 +69,17 @@ Python 2 + Qt4
     brew install libxml2
     make qt4py2
     python labelImg.py
-    python  labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
+    python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
+Python 3 + Qt5
+
+.. code::
+
+    brew install qt pyqt libxml2
+    pip install pyqt5
+    make qt5py3
+    python labelImg.py
+    python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
 Windows
 ^^^^^^^
@@ -164,7 +173,7 @@ Hotkeys
 +------------+--------------------------------------------+
 | a          | Previous image                             |
 +------------+--------------------------------------------+
-| del        | Delete the selected rect box               |
+| x          | Delete the selected rect box               |
 +------------+--------------------------------------------+
 | Ctrl++     | Zoom in                                    |
 +------------+--------------------------------------------+
