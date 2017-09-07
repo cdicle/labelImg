@@ -240,7 +240,7 @@ class MainWindow(QMainWindow, WindowMixin):
         create = action('Create\nRectBox', self.createShape,
                         'w', 'new', u'Draw a new Box', enabled=False)
         delete = action('Delete\nRectBox', self.deleteSelectedShape,
-                        'Delete', 'delete', u'Delete', enabled=False)
+                        'x', 'delete', u'Delete', enabled=False)
         copy = action('&Duplicate\nRectBox', self.copySelectedShape,
                       'Ctrl+D', 'copy', u'Create a duplicate of the selected Box',
                       enabled=False)
@@ -344,6 +344,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Auto saving : Enble auto saving if pressing next
         self.autoSaving = QAction("Auto Saving", self)
+        self.autoSaving.setShortcut("Ctrl+Shift+0")
         self.autoSaving.setCheckable(True)
 
         # Sync single class mode from PR#106
