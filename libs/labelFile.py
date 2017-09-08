@@ -10,6 +10,7 @@ from base64 import b64encode, b64decode
 from libs.pascal_voc_io import PascalVocWriter
 from libs.pascal_voc_io import XML_EXT
 import os.path
+import json
 import sys
 
 
@@ -20,13 +21,14 @@ class LabelFileError(Exception):
 class LabelFile(object):
     # It might be changed as window creates. By default, using XML ext
     # suffix = '.lif'
-    suffix = XML_EXT
+    # suffix = XML_EXT
 
-    def __init__(self, filename=None):
+    def __init__(self, suffix=None, filename=None):
         self.shapes = ()
         self.imagePath = None
         self.imageData = None
         self.verified = False
+        self.suffix = suffix
 
     def savePascalVocFormat(self, filename, shapes, imagePath, imageData,
                             lineColor=None, fillColor=None, databaseSrc=None):
@@ -55,13 +57,56 @@ class LabelFile(object):
         writer.save(targetFile=filename)
         return
 
+    def saveJsonFormat(self, filename, shapes, imagePath, imageData,
+                            lineColor=None, fillColor=None, databaseSrc=None):
+        imgFolderPath = os.path.dirname(imagePath)
+        imgFolderName = os.path.split(imgFolderPath)[-1]
+        imgFileName = os.path.basename(imagePath)
+
+        # image = QImage()
+        # image.load(imagePath)
+        # imageShape = [image.height(), image.width(),
+                    #   1 if image.isGrayscale() else 3]
+        # with open(os.path.join(annotation_path, json_name), 'w') as fp:
+            # json.dump(detections, fp)
+        # annotations=[]
+        # for shape in shapes:
+        #     annotation = {}
+        #     annotation['label'] = shape['label']
+        #     # annotation['bbox'] = LabelFile.convertPoints2BndBox(shape['points'])
+        #     x1,y1 = shape['points'][0]
+        #     x2,y2 = shape['points'][2]
+        #     annotation['bbox'] = [x1, y1, x2, y2]
+        #     annotations.append(annotation)
+        annotations = shapes
+
+        with open(filename, 'w') as fp:
+            json.dump(annotations, fp)
+        return
+    @staticmethod
+    def loadJsonFormat(jsonPath):
+        with open(jsonPath) as fp:
+            annotations = json.load(fp)
+        # shapes = []
+        # for item in annotations:
+        #     shape={}
+        #     shape['label'] = annotation['label']
+        #     x1, y1, x2, y2 = annotation['bbox']
+        #     shape['points'] = [(x1,y1),(x2,y1),(x2,y2),(x1,y2)]
+        #     shape['difficult'] = False
+        #     shape['line_color'] = None
+        #     shape['fill_color'] = None
+        #     shapes.append(shape)
+        shapes = annotations
+        return shapes
+
     def toggleVerify(self):
         self.verified = not self.verified
 
     @staticmethod
-    def isLabelFile(filename):
+    def isLabelFile(filename, suffix):
         fileSuffix = os.path.splitext(filename)[1].lower()
-        return fileSuffix == LabelFile.suffix
+        return fileSuffix == suffix
 
     @staticmethod
     def convertPoints2BndBox(points):

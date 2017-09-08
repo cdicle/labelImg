@@ -91,12 +91,19 @@ class MainWindow(QMainWindow, WindowMixin):
         self.setWindowTitle(__appname__)
         # Save as Pascal voc xml
         self.defaultSaveDir = None
-        self.usingPascalVocFormat = True
+        self.usingPascalVocFormat = False
+        self.usingJsonFormat = True
         # For loading all image under a directory
         self.mImgList = []
         self.dirname = None
         self.labelHist = []
         self.lastOpenDir = None
+
+        # TODO: Get this as an argument
+        if self.usingPascalVocFormat:
+            self.label_ext = XML_EXT
+        elif self.usingJsonFormat:
+            self.label_ext = '.json'
 
         # Whether we need to save or not.
         self.dirty = False
@@ -695,7 +702,7 @@ class MainWindow(QMainWindow, WindowMixin):
     def saveLabels(self, annotationFilePath):
         annotationFilePath = ustr(annotationFilePath)
         if self.labelFile is None:
-            self.labelFile = LabelFile()
+            self.labelFile = LabelFile(suffix=self.label_ext)
             self.labelFile.verified = self.canvas.verified
 
         def format_shape(s):
@@ -714,6 +721,10 @@ class MainWindow(QMainWindow, WindowMixin):
             if self.usingPascalVocFormat is True:
                 print ('Img: ' + self.filePath + ' -> Its xml: ' + annotationFilePath)
                 self.labelFile.savePascalVocFormat(annotationFilePath, shapes, self.filePath, self.imageData,
+                                                   self.lineColor.getRgb(), self.fillColor.getRgb())
+            if self.usingJsonFormat is True:
+                print ('Img: ' + self.filePath + ' -> Its json: ' + annotationFilePath)
+                self.labelFile.saveJsonFormat(annotationFilePath, shapes, self.filePath, self.imageData,
                                                    self.lineColor.getRgb(), self.fillColor.getRgb())
             else:
                 self.labelFile.save(annotationFilePath, shapes, self.filePath, self.imageData,
@@ -883,9 +894,10 @@ class MainWindow(QMainWindow, WindowMixin):
             fileWidgetItem.setSelected(True)
 
         if unicodeFilePath and os.path.exists(unicodeFilePath):
-            if LabelFile.isLabelFile(unicodeFilePath):
+            if LabelFile.isLabelFile(unicodeFilePath, self.label_ext):
                 try:
-                    self.labelFile = LabelFile(unicodeFilePath)
+                    self.labelFile = LabelFile(filename=unicodeFilePath,
+                                               suffix=self.suffix)
                 except LabelFileError as e:
                     self.errorMessage(u'Error opening file',
                                       (u"<p><b>%s</b></p>"
@@ -924,13 +936,24 @@ class MainWindow(QMainWindow, WindowMixin):
             if self.usingPascalVocFormat is True:
                 if self.defaultSaveDir is not None:
                     basename = os.path.basename(
-                        os.path.splitext(self.filePath)[0]) + XML_EXT
+                        os.path.splitext(self.filePath)[0]) + self.label_ext
                     xmlPath = os.path.join(self.defaultSaveDir, basename)
                     self.loadPascalXMLByFilename(xmlPath)
                 else:
-                    xmlPath = os.path.splitext(filePath)[0] + XML_EXT
+                    xmlPath = os.path.splitext(filePath)[0] + self.label_ext
                     if os.path.isfile(xmlPath):
                         self.loadPascalXMLByFilename(xmlPath)
+
+            if self.usingJsonFormat is True:
+                if self.defaultSaveDir is not None:
+                    basename = os.path.basename(
+                        os.path.splitext(self.filePath)[0]) + self.label_ext
+                    jsonPath = os.path.join(self.defaultSaveDir, basename)
+                    self.loadJsonByFilename(jsonPath)
+                else:
+                    jsonPath = os.path.splitext(filePath)[0] + self.label_ext
+                    if os.path.isfile(jsonPath):
+                        self.loadJsonByFilename(jsonPath)
 
             self.setWindowTitle(__appname__ + ' ' + filePath)
 
@@ -1157,13 +1180,13 @@ class MainWindow(QMainWindow, WindowMixin):
         if self.defaultSaveDir is not None and len(ustr(self.defaultSaveDir)):
             if self.filePath:
                 imgFileName = os.path.basename(self.filePath)
-                savedFileName = os.path.splitext(imgFileName)[0] + XML_EXT
+                savedFileName = os.path.splitext(imgFileName)[0] + self.label_ext
                 savedPath = os.path.join(ustr(self.defaultSaveDir), savedFileName)
                 self._saveFile(savedPath)
         else:
             imgFileDir = os.path.dirname(self.filePath)
             imgFileName = os.path.basename(self.filePath)
-            savedFileName = os.path.splitext(imgFileName)[0] + XML_EXT
+            savedFileName = os.path.splitext(imgFileName)[0] + self.label_ext
             savedPath = os.path.join(imgFileDir, savedFileName)
             self._saveFile(savedPath if self.labelFile
                            else self.saveFileDialog())
@@ -1288,6 +1311,24 @@ class MainWindow(QMainWindow, WindowMixin):
         self.loadLabels(shapes)
         self.canvas.verified = tVocParseReader.verified
 
+    def loadJsonByFilename(self, jsonPath):
+        if self.filePath is None:
+            return
+        if os.path.isfile(jsonPath) is False:
+            return
+
+        def format_label(l):
+            label = l['label']
+            points = l['points']
+            line_color = l['line_color']
+            fill_color = l['fill_color']
+            difficult = l['difficult']
+            return (label,points,line_color,fill_color,difficult)
+
+        labels = LabelFile.loadJsonFormat(jsonPath)
+        shapes = [format_label(label) for label in labels]
+        self.loadLabels(shapes)
+        self.canvas.verified = False
 
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
